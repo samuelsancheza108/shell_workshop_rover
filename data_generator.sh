@@ -7,6 +7,20 @@ while true; do
     # Formato de salida
     echo "[$(date +%T)] [BATT] $BATT" >> rover_system.log
     
-    # Frecuencia: 0.2Hz (Cada 5 segundos)
-    sleep 5
+    # Generamos el valor (SIN espacios en el = y el $(()) )
+    TEMP=$(( ( RANDOM % 41 ) + 20 ))
+    
+    # Escribimos en el log (formato limpio)
+    echo "[$(date +%T)] [TEMP] $TEMP" >> rover_system.log
+    
+
+    # Rango de RPM: de 1000 a 3500
+    # (RANDOM % 2501) genera 0-2500, + 1000 = 1000-3500
+    RPM=$(( (RANDOM % 2501) + 1000 ))
+    
+    # Formato de salida
+    echo "[$(date +%T)] [MOTORES] $RPM" >> rover_system.log
+    
+    # Frecuencia: 1Hz
+    sleep 2
 done

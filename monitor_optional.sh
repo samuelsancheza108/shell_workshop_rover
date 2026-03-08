@@ -4,14 +4,16 @@ NC='\033[0m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; GREEN='\
 LOG_FILE="rover_system.log"
 
 # UMBRALES DE SEGURIDAD (Thresholds)
-MAX_TEMP=50
-MIN_BATT=15
-MAX_RPM=3000
+MAX_TEMP=100
+MIN_BATT=0
+MAX_RPM=3600
 MODE="ALL"
 
 # Función para obtener la media del log:
 media_variable() {
-    variable="$1"
+    # Este $1 es respecto a como llamamos a la función en el script
+    # NO forma parte de los parámetros que pasamos al llamar al script:
+    variable="$1"   
     awk -v var="[$variable]" '
         $2 == var {
             suma += $3
@@ -24,25 +26,34 @@ media_variable() {
                 print "No hay datos de", var
         }
     ' rover_system.log
+    # En este caso, $2 y $3 forman parte del programa del awk (separa por espacios, $2 y $3 son las columnas)
 }
 
 # Leemos la flag que sea
 MODE="all"
 AVERAGE="false"
 
-case "$1" in
-    -t)
-        MODE="temp" ;;
-    -m)
-        MODE="motores" ;;
-    -b)
-        MODE="batt" ;;
-    --avg)
-        AVERAGE="true";;
-    -h)
-        echo "usage: $0 \n\t-t: mostrar solo temperatura \n\t-m:mostrar solo datos de motores
-         \n\t-b: mostrar solo datos de la bateria \n\t--avg:mostrar valores medios durante la ejecucion"
-esac
+# Comprobamos que los parametros:
+MODE="all"
+AVERAGE="false"
+
+for arg in "$@"; do
+    case "$arg" in
+        -t) MODE="temp" ;;
+        -m) MODE="motores" ;;
+        -b) MODE="batt" ;;
+        --avg) AVERAGE="true" ;;
+        -h)
+            echo -e "usage: $0\n\t-t: mostrar solo temperatura\n\t-m: mostrar solo datos de motores\n\t-b: mostrar solo datos de la bateria\n\t--avg: mostrar valores medios durante la ejecucion"
+            exit
+            ;;
+        *)
+            echo "Parámetro no válido: $arg"
+            exit 1
+            ;;
+    esac
+done
+
 
 clear
 echo -e "${CYAN}>>> MONITOR INICIADO. ESPERANDO TELEMETRÍA... <<<\${NC}"
@@ -107,19 +118,21 @@ tail -f $LOG_FILE | while read -r line; do
         echo -e "  MOTORES:     ${CYAN}${RPM:-'--'} RPM${NC}"
     fi
 
+    if [ "$AVERAGE" = "true" ]; then
+        echo -e "${CYAN}--------------------------------------------------${NC}"
+        media_temp=$(media_variable TEMP)
+        media_bat=$(media_variable BATT)
+        media_motor=$(media_variable MOTORES)
+
+        echo -e "  TEMP MEDIA:    ${YELLOW}${media_temp:-'--'}°C${NC}"
+        echo -e "  ENERGÍA MEDIA: ${GREEN}${media_bat:-'--'}%${NC}"
+        echo -e "  RPM MEDIA:     ${CYAN}${media_motor:-'--'} RPM${NC}"
+    fi
+
+    echo -e "${CYAN}--------------------------------------------------${NC}"
     echo -e "  ULTIMA LÍNEA RECIBIDA: $line"
     echo -e "${CYAN}--------------------------------------------------${NC}"
 
-    if [ "$AVERAGE" = "true" ]; then
-
-    media_temp=$(media_variable TEMP)
-    media_bat=$(media_variable BATT)
-    media_motor=$(media_variable MOTORES)
-
-    echo -e "  TEMP MEDIA:    ${YELLOW}${media_temp:-'--'}°C${NC}"
-    echo -e "  ENERGÍA MEDIA: ${GREEN}${media_bat:-'--'}%${NC}"
-    echo -e "  RPM MEDIA:     ${CYAN}${media_motor:-'--'} RPM${NC}"
-
-    fi
+    
     
 done

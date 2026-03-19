@@ -1,8 +1,9 @@
 #!/bin/bash
 
 while true; do
-	VALOR=$(( (RANDOM % 3500) + 3000 ))
-	echo "[$(date +%T)] [Motor] $VALOR" >> rover_system.log
+	MOTORES=$(( (RANDOM % 3500) + 3000 ))
+	echo "[$(date +%T)] [Motor] $MOTORES" >> rover_system.log
+	sleep 2
 
 done
 
